@@ -1,0 +1,72 @@
+import time
+import os
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
+# ================= CẤU HÌNH =================
+# Bạn muốn 5 giây thực = 2 tiếng ảo? (7200 giây / 5 giây = 1440)
+# Khuyên dùng: 60 (1 phút thực = 1 tiếng ảo) hoặc 24 (5 phút thực = 2 tiếng ảo)
+TIME_MULTIPLIER = 1440
+
+thu_muc_luu = os.path.join(os.getcwd(), "HoSo_HocTap_AI")
+opts = Options()
+opts.add_argument(f"--user-data-dir={thu_muc_luu}")
+opts.add_argument("--no-sandbox")
+opts.add_argument("--disable-dev-shm-usage")
+
+print("[+] Đang khởi động trình duyệt...")
+driver = webdriver.Chrome(options=opts)
+driver.maximize_window()
+
+# ================= MÃ JS "BẺ CONG THỜI GIAN" =================
+js_hook = f"""
+(function() {{
+    if (window._timeWarped) return;
+    window._timeWarped = true;
+
+    const SPEED = {TIME_MULTIPLIER};
+    const startRealTime = Date.now();
+
+    console.log(`🔥 [HACK] Đã kích hoạt Kéo giãn thời gian (x${{SPEED}})!`);
+
+    // 1. Ghi đè Date.now() - Biến 5 giây thành 2 tiếng
+    const originalDateNow = Date.now;
+    Date.now = function() {{
+        const realElapsed = originalDateNow() - startRealTime;
+        return startRealTime + (realElapsed * SPEED);
+    }};
+
+    // 2. Ghi đè performance.now()
+    const originalPerfNow = performance.now.bind(performance);
+    const startPerfTime = originalPerfNow();
+    performance.now = function() {{
+        const realElapsed = originalPerfNow() - startPerfTime;
+        return startPerfTime + (realElapsed * SPEED);
+    }};
+
+    // 3. Tăng tốc setInterval (Có chốt chặn an toàn để không treo máy)
+    const originalSetInterval = window.setInterval;
+    window.setInterval = function(fn, delay, ...args) {{
+        // Chia nhỏ thời gian delay.
+        // Chốt chặn: Không cho phép delay nhỏ hơn 10ms để trình duyệt không bị treo (Crash)
+        let newDelay = Math.max(delay / SPEED, 10);
+        return originalSetInterval(fn, newDelay, ...args);
+    }};
+}})();
+"""
+
+driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": js_hook})
+
+print("\n" + "=" * 70)
+print(f"ĐÃ KÍCH HOẠT CHẾ ĐỘ KÉO GIÃN THỜI GIAN (x{TIME_MULTIPLIER})")
+print(f"-> Tốc độ: 5 giây thực tế = 2 tiếng ảo (ước tính)")
+print("1. Trình duyệt mở ra. Bạn vào bài tập làm bình thường.")
+print("2. ĐỪNG BẤM DONE NGAY. Hãy để cho đồng hồ ảo chạy (khoảng 5-10 giây).")
+print("3. Bấm Done, Next hoặc đóng bài.")
+print("4. Mở Gradebook ra xem, thời gian sẽ nhảy vọt cực mạnh.")
+print("=" * 70)
+
+driver.get("https://learn.eltngl.com/")
+
+input("\n[?] Nhấn ENTER để đóng trình duyệt khi bạn đã kiểm tra xong...")
+driver.quit()
